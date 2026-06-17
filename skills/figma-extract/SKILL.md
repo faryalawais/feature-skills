@@ -15,6 +15,26 @@ The **Figma Dev Mode MCP server** must be connected (see the project
 is not, **stop and tell the user how to enable it** — never fabricate design
 data, measurements, or screenshots.
 
+## HARD RULE — Screenshots are visual reference only. NEVER a data source.
+
+`get_screenshot` / `reference.png` exists to give the developer a visual
+baseline. It is **never** a substitute for structured design data.
+
+**If `get_design_context` fails or returns no structured data:**
+- **STOP immediately.** Do not fall back to screenshots.
+- Do not proceed to `spec.json`, `design-contract`, or any downstream skill.
+- Report the exact MCP error to the user.
+- Tell the user what to fix (MCP disconnected, wrong node ID, access issue,
+  frame too large — follow the Large Frame Protocol below instead).
+
+A screenshot-only extraction produces zero measurements, zero token mappings,
+and zero component anatomy. Any implementation built from it will deviate from
+the Figma design. **This is forbidden.**
+
+The only exception: after structured data is successfully extracted, screenshots
+are taken as visual reference (step 2 / step 1d). They accompany `spec.json`,
+not replace it.
+
 ---
 
 ## Mode A — `tokens`  (refresh the design system)
