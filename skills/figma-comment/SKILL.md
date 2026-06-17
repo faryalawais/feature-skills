@@ -46,20 +46,32 @@ Determine which stage just completed and what summary to post:
 **Next step:** <next skill in pipeline>
 ```
 
-### Step 3 — Post to Jira
-If Jira integration is configured: POST comment via Jira API to `<parent-id>`.
-If not configured: display the comment and ask the user to post it manually.
+### Step 3 — Write to local comment log (default / testing mode)
+If `JIRA_BASE_URL` is not set: append the comment to
+`features/<parent-id>/tickets/comments.md` with a timestamp.
 
-### Step 4 — Post to Figma (optional)
+```markdown
+---
+## <Stage Name> — <ISO date>
+<formatted comment body>
+```
+
+This file is the local substitute for Jira comments. No manual action needed.
+
+### Step 4 — Post to Jira (integrated mode only)
+If `JIRA_BASE_URL` is set: POST comment via Jira API to `<parent-id>`.
+On failure: fall back to local log. Never block the pipeline.
+
+### Step 5 — Post to Figma (optional)
 If `brief.md` has a Figma URL and the Figma MCP is available:
 Post the same summary as a Figma comment on the relevant frame.
-If Figma MCP is unavailable, skip silently — do not block the pipeline.
+If Figma MCP is unavailable, skip silently — do not block.
 
 ## Success criteria
-- Comment posted (or user confirmed manual post) on Jira ticket
+- Comment written to `tickets/comments.md` (local) or Jira (integrated)
 - No pipeline blocking — this skill is informational only
 
 ## Hard rules
-- Never block the pipeline waiting for a Figma comment to succeed.
-- This skill has no output file. It only posts comments.
-- Keep comments concise — stakeholders skim; use bullet points, not paragraphs.
+- Never block the pipeline. This skill is fire-and-forget.
+- In local mode, `tickets/comments.md` captures the full comment history.
+- Keep comments concise — use bullet points.

@@ -1,96 +1,98 @@
 ---
 name: ticket-generate
 description: >-
-  Auto-create FE and BE Jira child tickets from approved PRD v2. Populates
-  each with the relevant PRD sections, Figma frames, and ACs. The ticket IDs
-  produced here are used in every file path, folder, branch, and skill from
-  this point forward. Run after prd-v2 is approved.
+  Create FE and BE child tickets from approved PRD v2. Works in two modes:
+  local-only (default for testing — no Jira needed) and Jira-integrated.
+  In local mode, ticket files are created under features/<parent-id>/tickets/.
+  The IDs produced here are used in every file path, folder, and skill downstream.
+  Run after prd-v2 is approved.
 ---
 
 # ticket-generate
 
-Reads the approved `prd-v2.md` and creates two child Jira tickets under the
-parent: one for FE (`<fe-jira-id>`) and one for BE (`<be-jira-id>`).
-
-These IDs are immutable once created. Every subsequent file, folder, branch,
-and skill reference uses them.
+Reads approved `prd-v2.md` and creates two child tickets: FE (`<fe-jira-id>`)
+and BE (`<be-jira-id>`). **Default mode is local-only** — no Jira needed.
+Tickets are markdown files; IDs are simple strings you define.
 
 ## Inputs
 - `docs/features/<parent-id>/prd-v2.md` — approved PRD v2
 - `features/<parent-id>/memory.md` — to update Feature Identity
-- Jira project credentials / base URL (from environment or user config)
 
-## Procedure
+## Mode detection
+- **No `JIRA_BASE_URL`** → local-only mode (default for testing)
+- **`JIRA_BASE_URL` set** → Jira-integrated mode
 
-### Step 1 — Read memory
-Confirm `<parent-id>` exists in memory and PRD v2 is marked approved.
-If not approved, stop — do not create tickets.
+---
 
-### Step 2 — Prepare FE ticket content
-Extract from PRD v2:
-- Feature name and one-line description
-- Figma frames section
-- Screens and AC items tagged for UI (happy / empty / error states)
-- Data Points table (fields FE needs from BE)
+## LOCAL-ONLY MODE (default)
 
-FE ticket body:
+### Step 1 — Assign ticket IDs
+Ask the user for simple IDs to use, or propose defaults:
+
 ```
-Feature: <Feature Name>
-Parent: <parent-id>
+Parent ticket: <parent-id>   (already set in memory)
+FE ticket:     <parent-id>-FE   e.g. FEAT-001-FE
+BE ticket:     <parent-id>-BE   e.g. FEAT-001-BE
+```
+
+If the user approves, use these. If they provide different IDs, use those.
+The IDs can be anything — they just need to be consistent across all files.
+
+### Step 2 — Create FE ticket file
+Write `features/<parent-id>/tickets/fe-ticket.md`:
+
+```markdown
+# FE Ticket — <fe-jira-id>
+**Parent:** <parent-id>
+**Status:** tickets-created
+**Created:** <ISO date>
 
 ## What to build
 <screens and UI behaviours from PRD v2>
 
 ## Figma frames
-<list of frames and nodeIds>
+<list of frames and nodeIds from PRD v2>
 
 ## Data Points (fields this FE ticket needs from BE)
 <Data Points table from PRD v2>
 
 ## Acceptance Criteria
-<@fe-relevant ACs from Updated Acceptance Criteria>
+<@fe-relevant ACs from PRD v2 Updated Acceptance Criteria>
 
 ## Dependencies
-BE ticket (<be-jira-id>) must be implemented and OpenAPI spec published
-before FE implementation begins.
+BE ticket (<be-jira-id>) must be be-implemented before FE starts.
 ```
 
-### Step 3 — Prepare BE ticket content
-Extract from PRD v2:
-- Feature name and one-line description
-- Gherkin @be scenarios summary
-- Data Points table (endpoints BE must expose)
-- Edge cases related to data validation and business logic
+### Step 3 — Create BE ticket file
+Write `features/<parent-id>/tickets/be-ticket.md`:
 
-BE ticket body:
-```
-Feature: <Feature Name>
-Parent: <parent-id>
+```markdown
+# BE Ticket — <be-jira-id>
+**Parent:** <parent-id>
+**Status:** tickets-created
+**Created:** <ISO date>
 
 ## What to build
 <endpoints and data behaviours from PRD v2>
 
-## Data to expose (from Data Points table)
-<list of fields FE depends on>
+## Data to expose
+<Data Points table from PRD v2>
 
 ## Acceptance Criteria
-<@be-relevant ACs from Updated Acceptance Criteria>
+<@be-relevant ACs from PRD v2>
 
 ## Gherkins
-Shared Gherkins file: features/<parent-id>/<parent-id>.feature
+Shared file: features/<parent-id>/<parent-id>.feature
 Run with --tags @be for BE-only execution.
 ```
 
-### Step 4 — Create tickets
-If Jira integration is configured: create the tickets via API and record the
-generated IDs.
-
-If Jira integration is not configured: display the ticket bodies and ask
-the user to create them manually and provide the IDs.
-
-Ask the user to confirm:
-- `<fe-jira-id>` = ?
-- `<be-jira-id>` = ?
+### Step 4 — Create feature directories
+```
+features/<fe-jira-id>/
+features/<be-jira-id>/
+docs/features/<fe-jira-id>/
+docs/features/<be-jira-id>/
+```
 
 ### Step 5 — Update memory
 ```markdown
@@ -102,24 +104,32 @@ Ask the user to confirm:
 - **Last updated:** <ISO date>
 ```
 
-Also create the feature directories:
-```
-features/<fe-jira-id>/
-features/<be-jira-id>/
-docs/features/<fe-jira-id>/
-docs/features/<be-jira-id>/
-```
-
 ### Step 6 — Run `jira-sync`
-Set all three tickets to `tickets-created`.
+Creates `features/<parent-id>/tickets/status.md` with initial statuses.
+
+---
+
+## JIRA-INTEGRATED MODE
+
+### Step 1 — Prepare ticket bodies
+(Same content as local mode above)
+
+### Step 2 — Create via Jira API
+POST to Jira REST API to create child issues under `<parent-id>`.
+Record the generated issue keys as `<fe-jira-id>` and `<be-jira-id>`.
+
+### Step 3 — Continue as local mode
+Steps 4–6 above apply identically.
+
+---
 
 ## Success criteria
-- FE and BE child tickets exist (in Jira or confirmed by user)
-- `<fe-jira-id>` and `<be-jira-id>` recorded in memory
+- FE and BE ticket files exist (local) or Jira issues created (integrated)
+- `<fe-jira-id>` and `<be-jira-id>` written to memory
 - Feature directories created
-- Jira status `tickets-created`
+- `tickets/status.md` written
 
 ## Hard rules
-- Never invent ticket IDs. They come from Jira (or the user).
-- Once written to memory, IDs are immutable — no skill may rename them.
-- FE and BE tickets are always separate — never merge into one ticket.
+- Never invent IDs without asking. User must confirm or provide them.
+- IDs are immutable once written to memory.
+- Local ticket files are a full substitute for Jira — the pipeline runs identically in both modes.
