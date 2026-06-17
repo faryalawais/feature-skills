@@ -37,17 +37,24 @@ tests during development without touching other features' suites.
 
 ## Procedure
 
-### Step 0 — Read memory
+### Step 0 — Validate feature branch
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+Must equal `feature/<be-jira-id>`. If it is `main` or anything else, stop:
+> "Wrong branch. Switch with: `git checkout feature/<be-jira-id>`"
+
+### Step 1 — Read memory
 Read `features/<parent-id>/memory.md`. Confirm all three BE contracts exist
 and `be-contract-ready` status is set. If not, stop.
 
-### Step 1 — Read all three contracts
+### Step 2 — Read all three contracts
 Read these files completely before writing any code:
 1. `docs/openapi/paths/<be-jira-id>.yaml` — every endpoint, request shape, response shape
 2. `docs/features/<be-jira-id>/business-logic.md` — every validation rule, state machine, auth rule
 3. `db/schema.ts` — every table and column by name (never query the DB to discover schema)
 
-### Step 2 — Plan implementation
+### Step 3 — Plan implementation
 List every endpoint in the OpenAPI path file. For each, record:
 - Method + path
 - Which `@be` scenario(s) cover it
@@ -57,7 +64,7 @@ List every endpoint in the OpenAPI path file. For each, record:
 
 Group by route file: endpoints sharing a resource go in the same `route.ts`.
 
-### Step 3 — Implement endpoint by endpoint
+### Step 4 — Implement endpoint by endpoint
 
 **Route handler structure:**
 ```typescript
@@ -79,7 +86,7 @@ export async function METHOD(request: Request) {
 - Every error response uses the error codes and messages from the Error Catalogue in `business-logic.md`
 - No raw SQL — Drizzle ORM query builder only
 
-### Step 4 — Write feature-scoped tests
+### Step 5 — Write feature-scoped tests
 Write test files to `tests/api/<be-jira-id>/`. One file per route is typical:
 
 ```
@@ -96,7 +103,7 @@ Each test file:
 - Tests the exact response shape from the OpenAPI spec (status code + body fields)
 - Tests every error case from the Error Catalogue
 
-### Step 5 — Run feature-scoped tests after each endpoint
+### Step 6 — Run feature-scoped tests after each endpoint
 After writing each endpoint and its tests:
 ```bash
 npm run test:api:feature -- tests/api/<be-jira-id>
@@ -109,7 +116,7 @@ Fix failures before moving to the next endpoint.
 permanently block this endpoint even if it is correct. Feature-scoped runs only
 during development; the full suite runs at the final gate.
 
-### Step 6 — Final gate (full suite)
+### Step 7 — Final gate (full suite)
 After all endpoints are implemented:
 ```bash
 npm run gate:api
@@ -126,7 +133,7 @@ If either fails on **this feature's tests**: fix the implementation, never the t
 If `openapi:validate` fails: the implementation drifted from the spec; fix the
 route handler — never the spec.
 
-### Step 7 — Write to memory
+### Step 8 — Write to memory
 ```markdown
 ## Implementation Notes
 ### BE notes
@@ -138,8 +145,49 @@ route handler — never the spec.
 - Deviations from contract: <none / list if any>
 ```
 
-### Step 8 — Update ticket status
+### Step 9 — Update ticket status
 Set BE ticket to `be-implemented`.
+
+### Step 10 — Commit, push branch, open PR
+```bash
+# Stage all feature work
+git add app/api/ lib/<be-jira-id>/ tests/api/<be-jira-id>/ docs/ features/ tokens/ db/
+
+# Commit
+git commit -m "feat(<be-jira-id>): <short description of feature>
+
+- <endpoint 1>
+- <endpoint 2>
+- <N> tests, gate:api passed
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+
+# Push feature branch
+git push origin feature/<be-jira-id>
+
+# Open PR targeting main
+gh pr create \
+  --base main \
+  --head feature/<be-jira-id> \
+  --title "feat(<be-jira-id>): <Feature Name>" \
+  --body "$(cat <<'EOF'
+## Summary
+- Implements <N> endpoints for <Feature Name>
+- All @be Gherkin scenarios covered
+- gate:api passed (typecheck + openapi:validate + api-registry:validate + <N> tests)
+
+## Endpoints
+<list of METHOD /path>
+
+## Test coverage
+tests/api/<be-jira-id>/ — <N> tests
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+**Hard rule: never push directly to `main`. The PR is the only merge path.**
 
 ## Success criteria
 - All `@be` scenarios have a corresponding implemented endpoint
@@ -148,10 +196,14 @@ Set BE ticket to `be-implemented`.
 - `npm run gate:api` exits 0 (full suite)
 - Memory Implementation Notes written
 - BE ticket `be-implemented`
+- Feature branch `feature/<be-jira-id>` pushed to origin
+- PR opened targeting `main`
+- `main` branch unchanged — no direct commits to main
 
 ## Hard rules
 - **Never modify test files to make them pass.** Fix the implementation.
 - **Never modify the OpenAPI spec during implementation.** It is frozen.
 - **Never modify `db/schema.ts` during implementation.** Run `orm-schema-author` again if schema changes are needed.
+- **Never push directly to `main`.** Commit to `feature/<be-jira-id>` and open a PR.
 - `db/schema.ts` is read directly — never call `PRAGMA table_info` or any DB introspection at runtime.
 - Test files always live under `tests/api/<be-jira-id>/` — never flat in `tests/api/`.

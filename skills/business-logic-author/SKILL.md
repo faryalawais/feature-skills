@@ -24,14 +24,22 @@ together to implement each endpoint correctly.
 
 ## Procedure
 
-### Step 0 — Read memory
+### Step 0 — Validate feature branch
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+Must equal `feature/<be-jira-id>`. If it is `main` or anything else, stop:
+> "Wrong branch. Switch with: `git checkout feature/<be-jira-id>`"
+> `openapi-author` creates the branch — if it does not exist yet, that skill must run first.
+
+### Step 1 — Read memory
 Read `features/<parent-id>/memory.md`. Confirm:
 - Gherkins are finalised (gherkin-validate passed)
 - openapi-author has produced Contract 1
 
 If Contract 1 is missing, stop. `openapi-author` must run first.
 
-### Step 1 — Extract business rules from Gherkins
+### Step 2 — Extract business rules from Gherkins
 Read every `@be` scenario. For each:
 - `Given` steps → initial state, preconditions, data setup
 - `When` steps → the operation being triggered
@@ -44,7 +52,7 @@ Group by endpoint (match to OpenAPI paths). Within each endpoint, identify:
 - **Authorization** — who is allowed to call this and under what conditions
 - **Error conditions** — what causes 4xx responses and which error code/message
 
-### Step 2 — Write `docs/features/<be-jira-id>/business-logic.md`
+### Step 3 — Write `docs/features/<be-jira-id>/business-logic.md`
 
 ```markdown
 # Business Logic — <be-jira-id>: <Feature Name>
@@ -116,7 +124,7 @@ States: <list>
 2. ...
 ```
 
-### Step 3 — Update memory
+### Step 4 — Update memory
 Append to BE Contract section in `features/<parent-id>/memory.md`:
 ```markdown
 ### Business Logic (Contract 2)

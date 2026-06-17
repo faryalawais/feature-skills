@@ -22,11 +22,18 @@ and relations from the OpenAPI response schemas and request body schemas.
 
 ## Procedure
 
-### Step 0 — Read memory
+### Step 0 — Validate feature branch
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+Must equal `feature/<be-jira-id>`. If it is `main` or anything else, stop:
+> "Wrong branch. Switch with: `git checkout feature/<be-jira-id>`"
+
+### Step 1 — Read memory
 Confirm Contract 1 (OpenAPI) and Contract 2 (Business Logic) exist.
 If either is missing, stop.
 
-### Step 1 — Extract data shapes
+### Step 2 — Extract data shapes
 From the OpenAPI spec, collect all:
 - Request body schemas (`requestBody.content.application/json.schema`)
 - Successful response schemas (`responses.2xx.content.application/json.schema`)
@@ -39,11 +46,11 @@ For each schema object:
 - Identify timestamp fields (createdAt, updatedAt)
 - Identify foreign key relationships between schemas
 
-### Step 2 — Cross-check with business logic
+### Step 3 — Cross-check with business logic
 Read `business-logic.md` State Machines section. For any entity with lifecycle
 states, add a `status` column (or equivalent) with an enum or check constraint.
 
-### Step 3 — Generate `db/schema.ts`
+### Step 4 — Generate `db/schema.ts`
 Use Drizzle ORM syntax. For each table:
 
 ```typescript
@@ -71,7 +78,7 @@ Column type mappings:
 If the project uses PostgreSQL/MySQL instead of SQLite, use the equivalent
 Drizzle table factory (`pgTable`, `mysqlTable`) and adapt column types.
 
-### Step 4 — Write or merge into `db/schema.ts`
+### Step 5 — Write or merge into `db/schema.ts`
 If `db/schema.ts` already has other feature tables: append new tables at the
 bottom with a comment block:
 ```typescript
@@ -81,7 +88,7 @@ bottom with a comment block:
 If `db/schema.ts` does not exist, create it with the import boilerplate and
 new tables.
 
-### Step 5 — Run migrations
+### Step 6 — Run migrations
 ```bash
 npm run db:generate
 npm run db:migrate
@@ -89,7 +96,7 @@ npm run db:migrate
 
 Both must exit 0. If either fails, fix the schema and re-run before continuing.
 
-### Step 6 — Update memory
+### Step 7 — Update memory
 Append to BE Contract section in `features/<parent-id>/memory.md`:
 ```markdown
 ### ORM Schema (Contract 3)
@@ -101,7 +108,7 @@ Tables added:
 - <tableName>: <columns list>
 ```
 
-### Step 7 — Run `jira-sync`
+### Step 8 — Run `jira-sync`
 All 3 BE contracts are now complete. Set BE ticket to `be-contract-ready`.
 
 ## Success criteria

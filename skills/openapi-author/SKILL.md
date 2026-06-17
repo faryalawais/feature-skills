@@ -44,11 +44,27 @@ After running `openapi-author`, verify your feature in isolation at:
 
 ## Procedure
 
-### Step 0 — Read memory
+### Step 0 — Create feature branch
+`openapi-author` is the first BE skill — it owns branch creation for this feature.
+
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+
+- If already on `feature/<be-jira-id>`: continue.
+- If on `main` or any other branch, create and switch:
+  ```bash
+  git checkout -b feature/<be-jira-id>
+  ```
+
+**Hard rule: Never commit or write any file while on `main`.** All contract and
+implementation work for a feature lives on `feature/<be-jira-id>` until the PR merges.
+
+### Step 1 — Read memory
 Read `features/<parent-id>/memory.md`. Confirm `gherkin-validate` passed.
 If missing, stop — run `gherkin-validate` first.
 
-### Step 1 — Extract endpoints from @be Gherkins
+### Step 2 — Extract endpoints from @be Gherkins
 Read every `@be` scenario. For each `When a <METHOD> request is made to "<path>"`:
 - List method + path
 - `Given` steps → preconditions → request body fields
@@ -60,7 +76,7 @@ For each endpoint, identify:
 - Error shape: `error.field` + `error.message` (field error) vs `error.message` only (auth error) vs flat `error` string
 - All 4xx status codes
 
-### Step 2 — Register response fields in api-registry.json
+### Step 3 — Register response fields in api-registry.json
 For every property in every **success response schema** (2xx):
 
 1. Read `tokens/api-registry.json` (create with `{ "_comment": "..." }` if missing).
@@ -81,7 +97,7 @@ For every property in every **success response schema** (2xx):
 4. Never remove existing entries — only add/update entries for this feature.
 5. Key convention: `field.<lowerCamelResource>.<lowerCamelProperty>`
 
-### Step 3 — Write the feature fragment
+### Step 4 — Write the feature fragment
 Write `docs/openapi/paths/<be-jira-id>.yaml`.
 
 Format: bare path keys at the top level (no `openapi:` / `info:` envelope — the root spec provides those). Include a `components.schemas` section at the bottom for schemas introduced by this feature.
@@ -107,7 +123,7 @@ Rules:
 - Error shapes: use structured `{ error: { field, message } }` when Gherkins assert `error.field` or `error.message` — not flat `ErrorBody`.
 - Reuse `$ref: '#/components/schemas/ErrorBody'` only for generic 500s.
 
-### Step 4 — Merge into root openapi.yaml
+### Step 5 — Merge into root openapi.yaml
 Add the feature's paths **inline** under a comment block:
 ```yaml
   # ── <be-jira-id> — <Feature Name> ─────────────────────────────────────────
@@ -115,7 +131,7 @@ Add the feature's paths **inline** under a comment block:
 Add the feature's schemas to `components/schemas`.
 Never delete or modify paths from other features.
 
-### Step 5 — Write api-contract.md
+### Step 6 — Write api-contract.md
 Write `docs/features/<be-jira-id>/api-contract.md`:
 - Endpoints table (method, path, operationId, purpose)
 - Status code matrix
@@ -124,7 +140,7 @@ Write `docs/features/<be-jira-id>/api-contract.md`:
 - Line: "Source of truth: `docs/openapi/paths/<be-jira-id>.yaml`"
 - Line: "Feature view: `http://localhost:3000/api/docs?feature=<be-jira-id>`"
 
-### Step 6 — Run gates (both must exit 0)
+### Step 7 — Run gates (both must exit 0)
 ```bash
 npm run openapi:validate       # validates root OpenAPI 3.1 structure
 npm run api-registry:validate  # validates tokens/api-registry.json entries
@@ -137,7 +153,7 @@ http://localhost:3000/api/docs?feature=<be-jira-id>
 ```
 Confirm only this feature's endpoints appear.
 
-### Step 7 — Update memory
+### Step 8 — Update memory
 ```markdown
 ## BE Contract
 <!-- openapi-author completed: <ISO date> -->
