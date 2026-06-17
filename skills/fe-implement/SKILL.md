@@ -37,6 +37,14 @@ Before writing a single line of UI code:
 
 ## Procedure
 
+### Step 0 — Validate feature branch
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+Must equal `feature/<fe-jira-id>`. If it is `main` or anything else, stop:
+> "Wrong branch. Switch with: `git checkout feature/<fe-jira-id>`"
+> `design-contract` creates the branch — if it does not exist yet, that skill must run first.
+
 ### Step 1 — Read all inputs
 Read these completely before writing any code:
 1. `contract.md` — full component anatomy, layout, tokens, states, API bindings
@@ -133,6 +141,44 @@ Set FE ticket to `fe-implemented`.
 ### Step 9 — Run `figma-comment`
 Post FE implementation complete notice to parent Jira ticket.
 
+### Step 10 — Commit, push branch, open PR
+```bash
+# Stage all feature work
+git add app/ components/ features/<fe-jira-id>/ docs/ tokens/
+
+# Commit
+git commit -m "feat(<fe-jira-id>): <short description of feature>
+
+- <component 1>
+- <component 2>
+- test:e2e passed, test:visual passed
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+
+# Push feature branch
+git push origin feature/<fe-jira-id>
+
+# Open PR targeting main
+gh pr create \
+  --base main \
+  --head feature/<fe-jira-id> \
+  --title "feat(<fe-jira-id>): <Feature Name>" \
+  --body "$(cat <<'EOF'
+## Summary
+- Implements <Feature Name> FE
+- All @fe Gherkin scenarios covered
+- test:e2e passed, test:visual passed, typecheck passed
+
+## Components
+<list of components>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+**Hard rule: never push directly to `main`. The PR is the only merge path.**
+
 ## Success criteria
 - Every element in `contract.md` §2 anatomy is rendered
 - Every `[component.*]` tag has a corresponding `data-testid`
@@ -141,6 +187,9 @@ Post FE implementation complete notice to parent Jira ticket.
 - `typecheck`, `lint`, `token-lint` all pass
 - No raw hex or px in `app/` or `components/`
 - FE ticket `fe-implemented`
+- Feature branch `feature/<fe-jira-id>` pushed to origin
+- PR opened targeting `main`
+- `main` branch unchanged — no direct commits to main
 
 ## Hard rules
 - FE NEVER starts before BE ticket is `be-implemented`.
@@ -148,4 +197,5 @@ Post FE implementation complete notice to parent Jira ticket.
 - Never update visual baseline to hide a fidelity gap. Fix the component.
 - Every element in §2 anatomy is required — omitting any element is a blocker.
 - No `any`, no `@ts-ignore`, no disabled lint rules.
+- **Never push directly to `main`.** Commit to `feature/<fe-jira-id>` and open a PR.
 - speckit is used internally — do not call speckit skills from outside this skill.

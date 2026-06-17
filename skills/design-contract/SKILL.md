@@ -43,7 +43,24 @@ written down. That is this skill's job.
 
 ## Procedure
 
-**Step 0 — Mandatory spec.json enumeration (do this BEFORE writing §2):**
+**Step 0 — Create feature branch**
+
+`design-contract` is the first FE skill — it owns branch creation for this feature.
+
+```bash
+git rev-parse --abbrev-ref HEAD
+```
+
+- If already on `feature/<fe-jira-id>`: continue.
+- If on `main` or any other branch, create and switch:
+  ```bash
+  git checkout -b feature/<fe-jira-id>
+  ```
+
+**Hard rule: Never commit or write any file while on `main`.** All contract and
+implementation work for a feature lives on `feature/<fe-jira-id>` until the PR merges.
+
+**Step 1 — Mandatory spec.json enumeration (do this BEFORE writing §2):**
 
 Read `features/<id>/figma/spec.json` and build an explicit checklist of every
 named element the contract must cover. Extract:
