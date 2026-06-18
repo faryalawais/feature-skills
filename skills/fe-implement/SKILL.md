@@ -77,6 +77,34 @@ Run `speckit-implement` one task at a time.
 - No raw `px` values. All spacing from token-backed Tailwind classes.
 - Every token name must exist in `reports/tokens-report.md`.
 
+**globals.css — must import tokens before any code is written:**
+`app/globals.css` MUST have `@import '../tokens/build/tokens.css';` as its first line,
+before the Tailwind directives. Without it, every `var(--color-*)` / `var(--spacing-*)`
+reference resolves to `unset` — the page renders with no colour, no spacing, no shadows.
+Check this file exists and has the import before writing any component.
+
+```css
+@import '../tokens/build/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**Layout shell — mandatory for every feature layout:**
+Every `app/<group>/layout.tsx` that renders a nav + main + footer shell MUST use:
+```tsx
+<div className="flex flex-col min-h-screen">
+  <SiteNav />
+  <main className="flex-1">{children}</main>
+  <SiteFooter />
+</div>
+```
+Without `min-h-screen` + `flex-1`, short-content pages leave a large white gap
+between the content card and the footer, and the footer floats in the middle
+of the viewport instead of sitting at the bottom. Never use a bare fragment `<>`
+as the layout root when the layout includes a header, main, and footer.
+
 **Component anatomy enforcement:**
 - Every element named in `contract.md` §2 must be rendered.
 - Every element with a `[component.*]` tag gets `data-testid={ids.<path>}`.
@@ -87,6 +115,20 @@ Run `speckit-implement` one task at a time.
 - Fetch from the exact endpoint paths defined in `docs/openapi/paths/<be-jira-id>.yaml`.
 - Response fields accessed by their exact JSON paths from contract.md §1b.
 - Handle loading, error, and empty states as specified in contract.md §5.
+
+**Responsive design — mandatory on every component:**
+Every page and component MUST be responsive across all screen sizes. Figma shows
+desktop at a fixed width — that is the fidelity target for desktop, but the
+implementation must also work at mobile (≥320px) and tablet (≥768px).
+- Use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`) for layout changes.
+- Fixed widths like `w-[424px]` that are wider than mobile viewport MUST get a
+  mobile override: `w-full sm:w-[424px]`.
+- Horizontal padding like `px-[300px]` (allow-raw) that would collapse content on
+  mobile MUST have a responsive alternative: `px-4 sm:px-8 lg:px-[300px]`.
+- Multi-column layouts (nav tiers, footer columns) MUST stack vertically on mobile.
+- Never ship a component that clips or overflows horizontally on any viewport width.
+- After implementing each component, resize the browser to 375px wide and verify
+  nothing overflows before moving to the next component.
 
 **Figma fidelity:**
 - After implementing each component, compare visually against `reference.png`.
@@ -186,6 +228,7 @@ EOF
 - `test:visual` exits 0
 - `typecheck`, `lint`, `token-lint` all pass
 - No raw hex or px in `app/` or `components/`
+- All pages render correctly at 375px, 768px, and 1280px+ viewport widths
 - FE ticket `fe-implemented`
 - Feature branch `feature/<fe-jira-id>` pushed to origin
 - PR opened targeting `main`
@@ -198,4 +241,5 @@ EOF
 - Every element in §2 anatomy is required — omitting any element is a blocker.
 - No `any`, no `@ts-ignore`, no disabled lint rules.
 - **Never push directly to `main`.** Commit to `feature/<fe-jira-id>` and open a PR.
+- Every component must be responsive — no horizontal overflow at any viewport width.
 - speckit is used internally — do not call speckit skills from outside this skill.
