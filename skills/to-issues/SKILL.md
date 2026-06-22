@@ -31,6 +31,19 @@ Break the plan into **tracer bullet** issues. Each issue is a thin vertical slic
 - A completed slice is demoable or verifiable on its own
 - Any prefactoring should be done first
 
+**Granularity rules — slices must be small:**
+
+- One slice = one user-visible element OR one API endpoint. Never a whole page.
+- A page is a container, not a feature. Split it by its parts: navbar, sidebar, category list, hero image, footer — each is its own slice.
+- The right question: "Can I demo THIS slice without building anything else on the page?" If yes, it's the right size. If it depends on other UI elements being present first, split further.
+- Name slices by the element, not the page: "Navbar with logo and nav links" not "Homepage".
+- The only exception: a page with a single responsibility and no sub-components (e.g. a bare login form) can be one slice.
+
+**Anti-patterns to reject:**
+- "Homepage feature" → too coarse, split into navbar / sidebar / categories / hero / footer
+- "User dashboard" → too coarse, split by widget/panel
+- "Product listing page" → split into filter sidebar / product grid / pagination / sort controls
+
 </vertical-slice-rules>
 
 ### 4. Quiz the user
