@@ -110,6 +110,29 @@ Component uses: font-medium  → FAIL — fix before continuing
 Do not move to the next component until every §4 row for the current component passes.
 A §4 mismatch is a blocker, the same as a failing test.
 
+**Shared component contract conflict check — mandatory before touching any `components/shared/` file:**
+A shared component (e.g. `SiteNav`, `SiteFooter`) may already have been implemented by a
+prior feature. Each feature's contract.md §4 describes the same component independently —
+and those descriptions can disagree if one feature's Figma extraction was wrong.
+
+Before writing or modifying any file under `components/shared/`:
+1. Check git log: `git log --oneline -- components/shared/<file>`. If it has prior commits,
+   it was already implemented.
+2. Find every contract.md that mentions this component:
+   `grep -rl "<ComponentName>" features/*/contract.md`
+3. Extract the §4 token rows for this component from each contract found.
+4. Compare token values row by row. Any disagreement is a **conflict** — do not pick one
+   arbitrarily. Open the Figma frame for each conflicting feature and resolve which value
+   is correct before writing any code.
+
+Example conflict:
+```
+HOME-002 §4 says: Middle Nav bg → color.surface.card    ← WRONG (bad extraction)
+SHOP-003 §4 says: Middle Nav bg → color.surface.infoStrong  ← CORRECT
+```
+Shipping with the wrong value means every feature that uses the shared component is broken.
+A conflict is a blocker — resolve it first, then update the incorrect contract.md to match.
+
 **globals.css — must import tokens before any code is written:**
 `app/globals.css` MUST have `@import '../tokens/build/tokens.css';` as its first line,
 before the Tailwind directives. Without it, every `var(--color-*)` / `var(--spacing-*)`
@@ -282,4 +305,8 @@ EOF
 - No `any`, no `@ts-ignore`, no disabled lint rules.
 - **Never push directly to `main`.** Commit to `feature/<fe-jira-id>` and open a PR.
 - Every component must be responsive — no horizontal overflow at any viewport width.
+- **Before modifying any `components/shared/` file: check git log for prior commits, find
+  every contract.md that mentions it, compare §4 token rows across all contracts. Any
+  disagreement is a blocker — resolve against Figma before writing code. A shared component
+  with the wrong token breaks every feature that uses it, not just the current one.**
 - speckit is used internally — do not call speckit skills from outside this skill.
