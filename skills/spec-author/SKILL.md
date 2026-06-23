@@ -23,11 +23,20 @@ Gherkin specification. (The *design contract* is a separate concern — the
 
 ## Procedure
 
+0. **Gate — vertical slice issues must exist.** Before writing any Gherkin, check
+   that GitHub issues have been created by `/to-issues` for this feature.
+   - Look for open issues labelled with `<parent-id>` on the issue tracker, OR
+     ask the user to confirm `/to-issues` has been run.
+   - If no issues exist: stop and tell the user to run `/to-issues` first.
+     Do not proceed. Gherkin scenarios must map 1:1 to the vertical slice issues.
+
 1. Read `docs/features/<parent-id>/prd-v2.md` as the authoritative requirements source.
    Use the **Updated Acceptance Criteria** section as the scenario source.
    Use the **Data Points FE Needs from BE** table for field bindings in `@fe` scenarios.
    Use the **Edge Cases** section for error/empty state scenarios.
-2. Write `features/<id>/<id>.feature` in Gherkin:
+2. Write `features/<id>/<id>.feature` in Gherkin — **one scenario per vertical slice issue**.
+   Each issue from `/to-issues` must map to at least one scenario. Do not write
+   scenarios for behaviours that have no corresponding issue.
    - One `Feature:` block.
    - A `Scenario:` for the happy path plus scenarios for the key edge cases
      drawn from the story's `acceptance_criteria`.

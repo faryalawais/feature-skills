@@ -7,6 +7,11 @@ description: Break a plan, spec, or PRD into independently-grabbable issues on t
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
+**Pipeline position:** Run after `/ticket-generate` and before `/spec-author`.
+Gherkin scenarios are written 1:1 against these issues — so slices here directly
+control the granularity of Gherkins and implementation tasks. Small slices = small,
+focused scenarios. Do not skip this step; `spec-author` will block if issues are missing.
+
 The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
 
 ## Process
