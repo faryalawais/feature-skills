@@ -111,13 +111,15 @@ Do not move to the next component until every §4 row for the current component 
 A §4 mismatch is a blocker, the same as a failing test.
 
 **Shared component contract conflict check — mandatory before touching any `components/shared/` file:**
-A shared component (e.g. `SiteNav`, `SiteFooter`) may already have been implemented by a
-prior feature. Each feature's contract.md §4 describes the same component independently —
-and those descriptions can disagree if one feature's Figma extraction was wrong.
+A shared component (e.g. `SiteNav`, `SiteFooter`) must be implemented **once** and then
+reused. Never re-implement a shared component that already exists — just import and call it.
 
 Before writing or modifying any file under `components/shared/`:
-1. Check git log: `git log --oneline -- components/shared/<file>`. If it has prior commits,
-   it was already implemented.
+1. Check git log: `git log --oneline -- components/shared/<file>`
+   - **Has prior commits → already implemented. Stop. Import it where needed; do not touch the file.**
+     Only modify it if the current feature's §4 requires a genuine addition (new slot, new prop)
+     that the existing implementation does not support — and even then, follow steps 2–4 first.
+   - **No prior commits → it needs to be implemented. Continue to steps 2–4.**
 2. Find every contract.md that mentions this component:
    `grep -rl "<ComponentName>" features/*/contract.md`
 3. Extract the §4 token rows for this component from each contract found.
@@ -132,6 +134,10 @@ SHOP-003 §4 says: Middle Nav bg → color.surface.infoStrong  ← CORRECT
 ```
 Shipping with the wrong value means every feature that uses the shared component is broken.
 A conflict is a blocker — resolve it first, then update the incorrect contract.md to match.
+
+**Shared component reuse rule (summary):**
+- Exists → import it, do not rewrite it.
+- Does not exist → implement it once using §4 from all contracts, then import it everywhere.
 
 **globals.css — must import tokens before any code is written:**
 `app/globals.css` MUST have `@import '../tokens/build/tokens.css';` as its first line,
@@ -305,8 +311,10 @@ EOF
 - No `any`, no `@ts-ignore`, no disabled lint rules.
 - **Never push directly to `main`.** Commit to `feature/<fe-jira-id>` and open a PR.
 - Every component must be responsive — no horizontal overflow at any viewport width.
-- **Before modifying any `components/shared/` file: check git log for prior commits, find
-  every contract.md that mentions it, compare §4 token rows across all contracts. Any
-  disagreement is a blocker — resolve against Figma before writing code. A shared component
-  with the wrong token breaks every feature that uses it, not just the current one.**
+- **Shared components are implemented once and reused everywhere.** Before touching any
+  `components/shared/` file: check git log. If it has prior commits → it is done, import it,
+  do not rewrite it. If it is new → check §4 across all contracts that reference it, resolve
+  any disagreement against Figma, then implement it once. Never re-implement a shared
+  component that already exists. A shared component with the wrong token or a duplicate
+  implementation breaks every feature that uses it.
 - speckit is used internally — do not call speckit skills from outside this skill.
