@@ -23,6 +23,19 @@ BE must be fully implemented and the OpenAPI spec published before this starts.
 - `reports/tokens-report.md` — allowed token vocabulary
 - `features/<parent-id>/memory.md`
 
+## Smart zone check (run before anything else)
+
+Count the `@fe` scenarios in the feature file:
+```bash
+grep -c "^\s*@fe" features/<parent-id>/<parent-id>.feature
+```
+
+- **≤ 10 scenarios** → proceed normally.
+- **11–20 scenarios** → warn the user: _"This feature has N @fe scenarios. Consider splitting into smaller features to stay in the smart zone. Proceeding, but implementation quality may degrade."_
+- **> 20 scenarios** → stop: _"This feature has N @fe scenarios — too large for one implementation run. Split the feature using `/to-issues` and implement one slice at a time."_
+
+Each scenario = one component task. Never implement more than one component per task pass.
+
 ## Pre-flight checks (mandatory before any code)
 
 Before writing a single line of UI code:

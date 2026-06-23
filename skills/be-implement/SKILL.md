@@ -37,7 +37,20 @@ tests during development without touching other features' suites.
 
 ## Procedure
 
-### Step 0 — Validate feature branch
+### Step 0 — Smart zone check (run before anything else)
+
+Count the `@be` scenarios in the feature file:
+```bash
+grep -c "^\s*@be" features/<parent-id>/<parent-id>.feature
+```
+
+- **≤ 10 scenarios** → proceed normally.
+- **11–20 scenarios** → warn the user: _"This feature has N @be scenarios. Consider splitting into smaller features to stay in the smart zone. Proceeding, but implementation quality may degrade."_
+- **> 20 scenarios** → stop: _"This feature has N @be scenarios — too large for one implementation run. Split the feature using `/to-issues` and implement one slice at a time."_
+
+Each scenario is implemented as one isolated task. Never batch multiple scenarios into a single code-writing pass.
+
+### Step 1 — Validate feature branch
 ```bash
 git rev-parse --abbrev-ref HEAD
 ```

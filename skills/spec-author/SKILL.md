@@ -21,6 +21,14 @@ Gherkin specification. (The *design contract* is a separate concern — the
 ## Outputs
 - `features/<id>/<id>.feature` — the Gherkin spec.
 
+## Smart zone check (run before anything else)
+
+Count the GitHub issues for `<parent-id>`:
+- **≤ 15 issues** → proceed normally.
+- **> 15 issues** → stop: _"This feature has N vertical slice issues — too many scenarios for one Gherkin file to stay in the smart zone. Split the feature into smaller parent features before writing Gherkin."_
+
+Each issue maps to at most 2–3 scenarios (happy path + edge cases). If the issue count × 3 would exceed ~30 scenarios, the feature is too large.
+
 ## Procedure
 
 0. **Gate — vertical slice issues must exist.** Before writing any Gherkin, check
