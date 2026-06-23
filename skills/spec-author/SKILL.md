@@ -25,9 +25,9 @@ Gherkin specification. (The *design contract* is a separate concern — the
 
 Count the GitHub issues for `<parent-id>`:
 - **≤ 15 issues** → proceed normally.
-- **> 15 issues** → stop: _"This feature has N vertical slice issues — too many scenarios for one Gherkin file to stay in the smart zone. Split the feature into smaller parent features before writing Gherkin."_
+- **> 15 issues** → warn: _"⚠️ This feature has N vertical slice issues — the resulting Gherkin file may exceed the smart zone (~30+ scenarios). Consider splitting this feature into two smaller parent features, or grouping slices and writing Gherkin in batches across fresh chats. Continue anyway?"_ Wait for the user to decide.
 
-Each issue maps to at most 2–3 scenarios (happy path + edge cases). If the issue count × 3 would exceed ~30 scenarios, the feature is too large.
+Each issue maps to at most 2–3 scenarios (happy path + edge cases). If the issue count × 3 would exceed ~30 scenarios, the feature is too large — start a fresh chat per group.
 
 ## Procedure
 

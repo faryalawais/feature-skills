@@ -45,8 +45,8 @@ grep -c "^\s*@be" features/<parent-id>/<parent-id>.feature
 ```
 
 - **≤ 10 scenarios** → proceed normally.
-- **11–20 scenarios** → warn the user: _"This feature has N @be scenarios. Consider splitting into smaller features to stay in the smart zone. Proceeding, but implementation quality may degrade."_
-- **> 20 scenarios** → stop: _"This feature has N @be scenarios — too large for one implementation run. Split the feature using `/to-issues` and implement one slice at a time."_
+- **11–20 scenarios** → warn: _"⚠️ This feature has N @be scenarios — you may hit the smart zone limit mid-run. Consider starting a fresh chat for each group of ~10 scenarios, or split the feature further with `/to-issues`."_ Then ask: _"Continue in this chat or split first?"_
+- **> 20 scenarios** → warn strongly: _"⚠️ This feature has N @be scenarios — too large for reliable output in one context window. Recommended: split the feature using `/to-issues` into smaller slices, then implement each slice in a fresh chat. Continue anyway?"_ Wait for the user to decide.
 
 Each scenario is implemented as one isolated task. Never batch multiple scenarios into a single code-writing pass.
 
