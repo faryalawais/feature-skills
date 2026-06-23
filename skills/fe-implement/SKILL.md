@@ -90,6 +90,26 @@ Run `speckit-implement` one task at a time.
 - No raw `px` values. All spacing from token-backed Tailwind classes.
 - Every token name must exist in `reports/tokens-report.md`.
 
+**§4 Token Audit — mandatory after EVERY component, before moving on:**
+`token-lint` only catches raw values — it cannot catch a wrong token. `bg-surface-warning`
+and `bg-surface-brand` are both valid tokens; only `contract.md §4` says which is correct.
+
+After writing each component, open `contract.md §4 Tokens per element` and walk every row
+that applies to elements in that component. For each row, verify the exact token used in
+the className matches §4 — background, text, border, radius, font size, font weight.
+
+Example check:
+```
+§4 says: Promo Side Banner | bg: color.surface.brand | text: color.text.inverse
+Component uses: bg-surface-brand ✓  text-text-inverse ✓  → pass
+
+§4 says: Feature label | font: font.weight.semibold
+Component uses: font-medium  → FAIL — fix before continuing
+```
+
+Do not move to the next component until every §4 row for the current component passes.
+A §4 mismatch is a blocker, the same as a failing test.
+
 **globals.css — must import tokens before any code is written:**
 `app/globals.css` MUST have `@import '../tokens/build/tokens.css';` as its first line,
 before the Tailwind directives. Without it, every `var(--color-*)` / `var(--spacing-*)`
@@ -157,7 +177,11 @@ Fix failures before moving to the next component. Never move on with a
 failing scenario.
 
 ### Step 6 — Final gate
-After all components implemented:
+After all components implemented, run a full §4 sweep across every implemented component:
+re-open `contract.md §4` and check each row against the finished files. This is the last
+chance to catch any wrong token that slipped through the per-component audit.
+
+Then run:
 ```bash
 npm run test:e2e && npm run test:visual
 ```
@@ -252,6 +276,9 @@ EOF
 - Never modify test files to make them pass. Fix the component.
 - Never update visual baseline to hide a fidelity gap. Fix the component.
 - Every element in §2 anatomy is required — omitting any element is a blocker.
+- **After every component: audit §4 (Tokens per element) row by row. `token-lint` cannot
+  catch a wrong token — `bg-surface-warning` and `bg-surface-brand` are both valid tokens,
+  only §4 says which is correct. A §4 mismatch is a blocker.**
 - No `any`, no `@ts-ignore`, no disabled lint rules.
 - **Never push directly to `main`.** Commit to `feature/<fe-jira-id>` and open a PR.
 - Every component must be responsive — no horizontal overflow at any viewport width.
