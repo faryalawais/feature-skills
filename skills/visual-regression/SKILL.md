@@ -50,6 +50,68 @@ The human uses this report during approval to verify the implementation
 exactly matches the Figma design. Any "Missing" or "Differs" finding means
 the feature is not ready for approval — return to `feature-implement`.
 
+## Job 3 — Dimension and computed-style assertions (the precision gate)
+
+Catches **spacing, element size, and typography gaps** that pixel screenshots cannot see.
+A 22px gap and a 24px gap are visually identical in a screenshot — this job catches the
+difference. Run this alongside Job 1 for every feature with a `spec.json`.
+
+### When to create Job 3 tests
+Always, if `features/<id>/figma/spec.json` exists and has dimension or typography values.
+
+### What to assert
+
+**Element dimensions** — use `boundingBox()`:
+```ts
+const box = await page.locator('[data-testid="..."]').boundingBox()
+expect(box!.height).toBeGreaterThanOrEqual(expected - tol)
+expect(box!.height).toBeLessThanOrEqual(expected + tol)
+```
+- ±2px for heights set by Tailwind utility classes (h-10, h-12, etc.)
+- ±4px for widths and flex/grid-driven dimensions
+- ±30px for heights emergent from content (not hardcoded)
+
+For elements inside nested flex containers, avoid deep Playwright locator chains
+(`> div > div > div`). Use `.evaluate()` with `:scope > div` querySelectorAll instead:
+```ts
+const height = await page.locator('[data-testid="..."]').evaluate(el => {
+  const child = el.querySelector(':scope > div')!
+  return child.getBoundingClientRect().height
+})
+```
+
+**Typography font size** — use `getComputedStyle`:
+```ts
+const fontSize = await el.evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+expect(fontSize).toBe(TOKEN_PX['font.size.section'])  // tokens always resolve to whole px
+```
+Build a `TOKEN_PX` map from `tokens/build/tokens.css` at the top of the test file.
+
+**Font weight** — exact string match:
+```ts
+const fontWeight = await el.evaluate(el => getComputedStyle(el).fontWeight)
+expect(fontWeight).toBe('600')  // semibold = 600, regular = 400, medium = 500
+```
+
+### Viewport strategy
+- **Default viewport (1280px)** — nav heights, typography, fixed-size elements that do not
+  depend on viewport width (arrow buttons, image dimensions, font sizes, font weights).
+- **1920px viewport** — widths of elements that use `2xl:` prefixes to match Figma's 1920px
+  layout (e.g., `2xl:w-[424px]` small widgets, category card min-widths).
+
+### File naming
+Create `tests/visual/<id>-dimensions.spec.ts` — separate file so it can run alongside the
+golden-master spec without inflating it.
+
+### Mapping spec.json to assertions
+Walk `figma/spec.json` and assert any node that has:
+- `dimensions.width` or `dimensions.height` — use `boundingBox()` or `evaluate`
+- `typography.size` — look up `TOKEN_PX[value]`, assert via `getComputedStyle().fontSize`
+- `typography.weight` — assert via `getComputedStyle().fontWeight`
+
+Prioritise fixed-size nodes (explicit Figma frame px values). Skip flex/auto-layout
+dimensions that have no explicit constraint in the Figma file.
+
 ## Integration with governance-gate
 `governance-gate` runs `npm run test:visual` as its fourth check:
 - No baseline yet → record "visual baseline pending human approval"
@@ -78,5 +140,6 @@ is a required environment-calibration step documented here as a hard rule so
 no one silently disables visual tests when they fail on setup.
 
 ## Success criteria
-`tests/visual/<id>.spec.ts` exists and runs; baselines are generated or
-compared; `reports/<id>-visual.md` is written.
+- `tests/visual/<id>.spec.ts` exists and runs; baselines are generated or compared.
+- `tests/visual/<id>-dimensions.spec.ts` exists if `figma/spec.json` has dimension/typography data.
+- `reports/<id>-visual.md` is written with section-by-section Present/Differs/Missing verdicts.
