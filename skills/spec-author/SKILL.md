@@ -58,10 +58,26 @@ Each issue maps to at most 2–3 scenarios (happy path + edge cases). If the iss
      `Then … uses token "color.action.primary"` (tokens from `reports/tokens-report.md` only).
 3. Update the feature's `status` in `backlog.yaml` to `specced`.
 
+4. **Prompt for next skill (mandatory).** After writing the `.feature` file, tell the user:
+
+   > "**`/spec-author` complete.** `features/<id>/<id>.feature` written with N scenarios.
+   > Next: `/scenario-review` — human sign-off on the Gherkins before automated validation.
+   > This is a required Day Shift gate. Run `/scenario-review` now.
+   > Do NOT run `/gherkin-validate` directly — `/scenario-review` triggers it on approval."
+
+   Do NOT run `/gherkin-validate` automatically. Do NOT advance to any contract skill.
+   Wait for the user to run `/scenario-review` first.
+
 ## Success criteria
 The `.feature` file is valid Gherkin, every referenced token exists in the
-tokens report, and the backlog status is `specced`.
+tokens report, the backlog status is `specced`, and the user has been told to run
+`/scenario-review` next.
 
 ## Failure handling
 If a scenario needs a token that does not exist, do not invent one — stop and
 tell the user the design system is missing that token.
+
+## Hard rules
+- Never run `/gherkin-validate` directly after writing the `.feature` file.
+- `/scenario-review` is the mandatory human gate between spec-author and gherkin-validate.
+- Human sign-off and automated validation are both required — neither replaces the other.

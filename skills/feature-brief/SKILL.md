@@ -32,12 +32,18 @@ description: >-
 > **Pipeline position:**
 > ```
 > PLANNING (run in sdlc-be when testing)
->   feature-brief  ← start here
+>   feature-brief    ← start here
+>   grill-me         ← REQUIRED: stress-test the idea before PRD
 >   prd-author
+>   prd-review       ← human gate (v1)
 >   prd-update
+>   prd-review       ← human gate (v2)
 >   ticket-generate
+>   to-issues
+>   grill-me         ← REQUIRED: stress-test the slices before Gherkins
 >   spec-author
->   gherkin-validate
+>   scenario-review  ← REQUIRED: human gate on Gherkins
+>   gherkin-validate ← automated gate (triggered by scenario-review)
 >        ↓
 > BE REPO (sdlc-be) — BE implements first
 >   openapi-author  ← BE work starts here
@@ -144,10 +150,20 @@ Create the file with this structure and populate Feature Identity:
 ### Step 4 — Run `jira-sync`
 Update parent ticket status to `brief-created`.
 
+### Step 5 — Prompt for next skill (mandatory)
+After completing, tell the user:
+
+> "**`/feature-brief` complete.**
+> Next: `/grill-me` — stress-test the feature idea before committing to the PRD.
+> This is a required Day Shift step. Run `/grill-me` now, then `/prd-author`."
+
+Do NOT proceed to `/prd-author` or any other skill automatically. Wait for the user to run `/grill-me` first.
+
 ## Success criteria
 - `docs/features/<parent-id>/brief.md` exists and is non-empty
 - `features/<parent-id>/memory.md` exists with Feature Identity populated
 - Jira parent ticket status is `brief-created`
+- User has been told to run `/grill-me` next
 
 ## Hard rules
 - Never invent a `<parent-id>`. Ask — even a simple string like `FEAT-001` is fine.
@@ -155,3 +171,4 @@ Update parent ticket status to `brief-created`.
 - Figma is optional at this stage. Record URL if given, "none yet" if not.
 - Never skip Step 1 grilling. A brief written without answers is not a brief.
 - `memory.md` must be created even if partially empty — all downstream skills depend on it.
+- Never advance to `/prd-author` without `/grill-me` running first.

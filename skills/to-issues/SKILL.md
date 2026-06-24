@@ -99,3 +99,13 @@ Or "None - can start immediately" if no blockers.
 </issue-template>
 
 Do NOT close or modify any parent issue.
+
+### 6. Prompt for next skill (mandatory)
+After all issues are published, tell the user:
+
+> "**`/to-issues` complete.**
+> Next: `/grill-me` — stress-test the slices before writing Gherkins.
+> Check: Is each slice small enough? Can it be demoed standalone without anything else built first?
+> This is a required Day Shift step. Run `/grill-me` now, then `/spec-author`."
+
+Do NOT proceed to `/spec-author` automatically. Wait for the user to run `/grill-me` first.
