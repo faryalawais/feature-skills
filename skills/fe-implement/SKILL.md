@@ -47,6 +47,13 @@ Before writing a single line of UI code:
 3. Verify `features/<fe-jira-id>/figma/reference.png` exists.
 4. Read `contract.md` §2 anatomy completely — build a checklist of every
    named element. Every element in §2 must be rendered. No gaps.
+5. **Verify every named component in §2 has a nodeId.** Scan every anatomy
+   line that carries a `[component.*]` tag. Each one must have `(nodeId X:Y)`
+   beside its name. If any nodeId is missing → **STOP**. Do not implement.
+   Report which components lack nodeIds and instruct the user to re-run
+   `design-contract` (which will trigger `figma-extract` to backfill them).
+   A missing nodeId means per-component Figma extraction cannot run, which
+   means implementation will produce drift from the Figma design.
 
 ## Procedure
 
@@ -84,6 +91,50 @@ Run `speckit-tasks`. Each task must state:
 
 ### Step 4 — Implement component by component
 Run `speckit-implement` one task at a time.
+
+**⚠ MANDATORY: Per-component Figma extraction gate (runs before writing any code for each component)**
+
+This is a hard gate. It runs once per component, in order, before the first line
+of code for that component is written. It is not optional and cannot be deferred.
+
+```
+FOR EACH component in the current slice/task:
+  1. Read the component's nodeId from contract.md §2
+     (format: `ComponentName  (nodeId X:Y, WxH)  [component.*]`)
+  2. Call get_design_context(nodeId) via the Figma MCP
+  3. From the response, record EVERY value before opening any .tsx file:
+       - Exact px dimensions (width, height)
+       - Exact padding, gap, margin values
+       - Font size, weight, line-height per text element
+       - Color token for every fill, stroke, background
+       - Border width, border-radius
+       - Shadow tokens
+       - Icon sizes and exact SVG asset URLs
+  4. Call get_screenshot(nodeId, contentsOnly: true) for visual reference
+  5. Map every recorded value to its exact design token from tokens-report.md
+     If ANY value has no exact token match → STOP. Follow the missing-tokens
+     protocol (see figma-extract skill). Do not approximate.
+  6. ONLY after steps 1–5 are complete → open the .tsx file and implement
+
+  BLOCK conditions (do not write code if any apply):
+  - nodeId is missing from contract.md §2 → re-run design-contract
+  - get_design_context returns empty/truncated → use get_metadata to find
+    child node IDs and call get_design_context per child section instead
+  - get_design_context fails with MCP error → stop, report error to user
+  - A measurement has no exact token and allow_raw_values is not set → stop
+```
+
+**Why this order matters:** Figma is the source of truth. contract.md §2 is
+derived from spec.json which was extracted earlier — it may be stale or
+incomplete. The per-component get_design_context call is always live Figma
+data. If contract.md §2 and the live get_design_context disagree on a value,
+the live Figma value wins — update the contract to match and continue.
+
+**Large component protocol:** If get_design_context on a component node is
+too large (MCP budget exceeded or response truncated):
+1. Call get_metadata(nodeId) to list its direct children with their IDs
+2. Call get_design_context per child section (e.g. header, body, footer of a card)
+3. Never proceed with partial data — extract every child before implementing
 
 **Token discipline — enforced throughout:**
 - No raw hex values. All colours from `var(--token-name)` or Tailwind token class.
@@ -318,3 +369,12 @@ EOF
   component that already exists. A shared component with the wrong token or a duplicate
   implementation breaks every feature that uses it.
 - speckit is used internally — do not call speckit skills from outside this skill.
+- **No code before get_design_context. Every component requires a live Figma
+  extraction (get_design_context on its nodeId) before a single line of code is
+  written. No exceptions. No approximations from memory, spec.json, or prior
+  context. The gate runs per component, every time, on every feature.**
+- **Extraction is per-component (small), never per-page (full frame).** Extracting
+  a full page at once hits MCP budget limits and produces truncated, incomplete
+  data. Always extract the specific component node, not its parent frame. If a
+  component node is still too large, extract its child sections one at a time
+  using get_metadata → per-child get_design_context. Never accept partial data.

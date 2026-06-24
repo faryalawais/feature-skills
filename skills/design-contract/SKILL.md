@@ -63,18 +63,24 @@ implementation work for a feature lives on `feature/<fe-jira-id>` until the PR m
 **Step 1 — Mandatory spec.json enumeration (do this BEFORE writing §2):**
 
 Read `features/<id>/figma/spec.json` and build an explicit checklist of every
-named element the contract must cover. Extract:
+named element the contract must cover. For each named element extract **both**
+its name and its `nodeId`:
 
-- Every `sections[].name` (top-level Figma sections)
-- Every `sections[].layers[].name` (nav tiers, promo bar layers, etc.)
-- Every `sections[].widgets[].name` (hero panels, side widgets, etc.)
-- Every `sections[].columns[].name` (grid columns, side banners, etc.)
-- Every `sections[].banners[].name` (promotional banner variations)
+- Every `sections[].name` + `sections[].nodeId`
+- Every `sections[].layers[].name` + `layers[].nodeId`
+- Every `sections[].widgets[].name` + `widgets[].nodeId`
+- Every `sections[].columns[].name` + `columns[].nodeId`
+- Every `sections[].banners[].name` + `banners[].nodeId`
 
-Write this checklist out **before** writing §2 anatomy text. Tick off each item
-as you document it. A contract that skips any checklist item is incomplete —
-`validate:figma-coverage` will catch it and block the gate, but catching it
-BEFORE writing is far cheaper than fixing after.
+If `spec.json` does not record `nodeId` on a named element → **STOP**. The
+`figma-extract` run that produced this spec.json was written before the nodeId
+requirement. Re-run `figma-extract` (frame mode) for this feature — it will now
+record a `nodeId` on every named element. Do not write `contract.md` without nodeIds.
+
+Write the checklist out **before** writing §2 anatomy text — name and nodeId on
+every row. Tick off each item as you document it. A contract that skips any
+checklist item is incomplete — `validate:figma-coverage` will catch it and block
+the gate, but catching it BEFORE writing is far cheaper than fixing after.
 
 **Common miss: content strings.** Some spec.json layers have a `content`
 field listing interactive sub-elements separated by `·` (e.g.
@@ -115,6 +121,23 @@ Fill in `contract-template.md` (in this skill's folder) for the feature:
    (per §1a) with `[component.X.Y.Z]  data-testid` so the implementor knows
    where `data-testid={ids.…}` belongs — and so the validate:contract script
    can enforce registry coverage.
+
+   **nodeId is MANDATORY on every named element (non-negotiable).**
+   Every section, component, and sub-component in §2 anatomy must include its
+   Figma `nodeId` in parentheses after its name. This is what `fe-implement`
+   uses to call `get_design_context` on exactly that node before writing code.
+   Without nodeIds, `fe-implement` cannot do per-component Figma extraction
+   and will be forced to approximate — which is how measurements get missed.
+
+   Required format for every named anatomy line:
+   ```
+   ├─ ProductCard  (nodeId 394:7726, 234×320)  [component.shop.productCard]  data-testid
+   ├─ FilterSidebar  (nodeId 391:5012, 312×716)  [component.shop.filterSidebar]  data-testid
+   └─ Navigation  (nodeId 391:6653, 1920×220)  [component.shared.siteNav]  data-testid
+   ```
+   If a nodeId is not available from spec.json, stop and re-run `figma-extract`.
+   A missing nodeId is treated the same as a missing element — it blocks the gate.
+
    **Tag format (mandatory):** every registered element must appear in the
    anatomy as `[component.X.Y.Z]  data-testid` on its line. This is the
    machine-readable anchor that `validate:contract` parses. Missing the tag
@@ -228,6 +251,10 @@ feature's `design_contract` field in `backlog.yaml`, and advance its `status`
 1. **Figma extract is required.** If `features/<id>/figma/spec.json`,
    `reference.png`, or `notes.md` are missing → stop, report, do not write
    the contract. No fallback. No PRD-derived estimates.
+1b. **nodeId is required on every §2 anatomy component.** A contract line
+   without a nodeId cannot be implemented faithfully — `fe-implement` will
+   have no target for `get_design_context` and will fall back to approximation.
+   Missing nodeIds are a contract defect. Re-run `figma-extract` to obtain them.
 2. **All frames, not just one.** If the backlog lists multiple `figma_frames`
    for this feature, all of them must be extracted before proceeding. A partial
    extract is treated the same as no extract.
